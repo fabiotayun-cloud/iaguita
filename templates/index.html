@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento Facial</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #e0e0e0;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 30px 20px; }
+
+        /* Header */
+        header { text-align: center; margin-bottom: 24px; }
+        header h1 {
+            font-size: 2.2rem; font-weight: 700;
+            background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+        header p { color: #9e9e9e; font-size: 0.95rem; }
+
+        /* Tabs */
+        .tabs { display: flex; justify-content: center; gap: 4px; margin-bottom: 28px; }
+        .tab-btn {
+            padding: 10px 28px; font-size: 0.95rem; font-weight: 600;
+            background: rgba(255,255,255,0.06); color: #aaa; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px 10px 0 0; cursor: pointer; transition: all 0.2s;
+        }
+        .tab-btn:hover { color: #ddd; background: rgba(255,255,255,0.1); }
+        .tab-btn.active { color: #fff; background: rgba(123,47,247,0.25); border-color: rgba(123,47,247,0.4); }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Cards & Upload */
+        .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+        @media (max-width: 640px) { .upload-grid { grid-template-columns: 1fr; } }
+        .upload-card {
+            background: rgba(255,255,255,0.06); border: 2px dashed rgba(255,255,255,0.15);
+            border-radius: 14px; padding: 28px 16px; text-align: center; cursor: pointer;
+            transition: all 0.3s ease; overflow: hidden;
+        }
+        .upload-card:hover { border-color: rgba(123,47,247,0.5); background: rgba(255,255,255,0.08); transform: translateY(-2px); }
+        .upload-card.has-image { border-color: rgba(0,210,255,0.4); padding: 10px; }
+        .upload-card input[type="file"] { display: none; }
+        .upload-icon { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+        .upload-card h3 { font-size: 1rem; margin-bottom: 4px; color: #fff; }
+        .upload-card p { font-size: 0.8rem; color: #888; }
+        .upload-card .preview-img { max-width: 100%; max-height: 260px; border-radius: 10px; object-fit: contain; }
+        .upload-card .change-btn { display: inline-block; margin-top: 8px; font-size: 0.78rem; color: #7b2ff7; cursor: pointer; text-decoration: underline; }
+
+        /* Buttons */
+        .action-btn {
+            display: block; width: 100%; max-width: 320px; margin: 0 auto 24px;
+            padding: 14px 28px; font-size: 1.05rem; font-weight: 600; color: #fff;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff); border: none;
+            border-radius: 12px; cursor: pointer; transition: all 0.3s; letter-spacing: 0.4px;
+        }
+        .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(123,47,247,0.4); }
+        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .action-btn.loading { pointer-events: none; }
+        .action-btn.loading::after {
+            content: ''; width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff;
+            border-radius: 50%; animation: spin 0.7s linear infinite;
+            display: inline-block; margin-left: 10px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn-secondary {
+            display: inline-block; padding: 8px 18px; font-size: 0.85rem; font-weight: 500;
+            color: #ccc; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+        /* Settings */
+        .settings-panel {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;
+        }
+        .settings-toggle {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            cursor: pointer; color: #aaa; font-size: 0.88rem; user-select: none; transition: color 0.2s;
+        }
+        .settings-toggle:hover { color: #ddd; }
+        .settings-toggle .arrow { transition: transform 0.3s; display: inline-block; }
+        .settings-toggle .arrow.open { transform: rotate(180deg); }
+        .settings-body { display: none; margin-top: 14px; }
+        .settings-body.open { display: block; }
+        .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+        .setting-row:last-child { margin-bottom: 0; }
+        .setting-label { font-size: 0.88rem; color: #bbb; flex: 1; min-width: 140px; }
+        .setting-label small { display: block; color: #777; font-size: 0.73rem; margin-top: 2px; }
+        .setting-control { display: flex; align-items: center; gap: 8px; }
+        .setting-control input[type="range"] { width: 140px; accent-color: #7b2ff7; }
+        .setting-control .value-badge { font-size: 0.85rem; color: #7b2ff7; font-weight: 600; min-width: 32px; text-align: center; }
+        .setting-control select, .setting-control input[type="date"] {
+            background: rgba(255,255,255,0.1); color: #e0e0e0; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer;
+        }
+        .setting-control select option { background: #24243e; color: #e0e0e0; }
+
+        /* Result panels */
+        .result-panel {
+            background: rgba(255,255,255,0.06); border-radius: 14px; padding: 28px;
+            text-align: center; display: none; animation: fadeIn 0.5s ease;
+        }
+        .result-panel.visible { display: block; }
+        .result-icon { font-size: 3.5rem; margin-bottom: 12px; }
+        .result-panel h2 { font-size: 1.4rem; margin-bottom: 6px; }
+        .result-panel.found h2 { color: #00e676; }
+        .result-panel.not-found h2 { color: #ff5252; }
+        .result-panel.error-result h2 { color: #ffab40; }
+        .result-message { font-size: 1rem; color: #bbb; margin-bottom: 16px; }
+        .faces-summary { font-size: 0.88rem; color: #888; margin-bottom: 16px; }
+        .face-list { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .face-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 500; }
+        .face-chip.match { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid rgba(0,230,118,0.3); }
+        .face-chip.no-match { background: rgba(255,82,82,0.1); color: #ff8a80; border: 1px solid rgba(255,82,82,0.2); }
+        .result-canvas-wrapper { margin-top: 20px; text-align: center; }
+        .result-canvas-wrapper canvas { max-width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); }
+
+        /* Attendance specific */
+        .members-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        }
+        .members-bar .info { font-size: 0.9rem; color: #bbb; }
+        .members-bar .info strong { color: #00d2ff; }
+        .members-bar .actions { display: flex; gap: 8px; }
+
+        .att-date-info {
+            text-align: center; margin-bottom: 16px; padding: 10px;
+            background: rgba(0,210,255,0.08); border-radius: 8px; font-size: 0.9rem; color: #aaa;
+        }
+        .att-date-info strong { color: #00d2ff; }
+        .att-date-info .source { font-size: 0.78rem; color: #777; margin-left: 6px; }
+
+        .att-results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+        @media (max-width: 640px) { .att-results-grid { grid-template-columns: 1fr; } }
+        .att-member-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; border-radius: 10px; transition: all 0.2s;
+        }
+        .att-member-card.present { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.25); }
+        .att-member-card.absent { background: rgba(255,82,82,0.07); border: 1px solid rgba(255,82,82,0.15); }
+        .att-member-card .status-icon { font-size: 1.3rem; }
+        .att-member-card .member-info { flex: 1; }
+        .att-member-card .member-name { font-weight: 600; font-size: 0.92rem; }
+        .att-member-card.present .member-name { color: #00e676; }
+        .att-member-card.absent .member-name { color: #ff8a80; }
+        .att-member-card .member-conf { font-size: 0.78rem; color: #888; }
+
+        .att-summary-stats {
+            display: flex; justify-content: center; gap: 24px; margin: 16px 0;
+        }
+        .att-stat { text-align: center; }
+        .att-stat .num { font-size: 1.8rem; font-weight: 700; }
+        .att-stat .label { font-size: 0.78rem; color: #888; }
+        .att-stat.present .num { color: #00e676; }
+        .att-stat.absent .num { color: #ff5252; }
+        .att-stat.total .num { color: #00d2ff; }
+
+        /* History table */
+        .history-section { margin-top: 28px; }
+        .history-section h3 { font-size: 1.1rem; margin-bottom: 12px; color: #ccc; text-align: center; }
+        .history-table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .history-table {
+            width: 100%; border-collapse: collapse; font-size: 0.82rem;
+        }
+        .history-table th, .history-table td {
+            padding: 8px 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .history-table th {
+            background: rgba(68,114,196,0.3); color: #fff; font-weight: 600;
+            position: sticky; top: 0;
+        }
+        .history-table th:first-child, .history-table td:first-child {
+            text-align: left; position: sticky; left: 0; background: #1a1a3e; z-index: 1;
+        }
+        .history-table th:first-child { z-index: 2; background: rgba(68,114,196,0.5); }
+        .history-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .history-table td:first-child:hover { background: #1a1a3e; }
+        .check-mark { color: #00e676; font-weight: bold; font-size: 1rem; }
+        .total-cell { font-weight: 600; color: #00d2ff; }
+        .delete-date { cursor: pointer; font-size: 0.75rem; opacity: 0.5; transition: opacity 0.2s; }
+        .delete-date:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Reconocimiento Facial</h1>
+            <p>Comparar rostros y registrar asistencias por reconocimiento facial</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('attendance')">Asistencias</button>
+            <button class="tab-btn" onclick="switchTab('compare')">Comparar Rostros</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- TAB: ASISTENCIAS                        -->
+        <!-- ═══════════════════════════════════════ -->
+        <div class="tab-content active" id="tab-attendance">
+            <!-- Barra de miembros -->
+            <div class="members-bar">
+                <div class="info">Miembros cargados: <strong id="memberCount">0</strong></div>
+                <div class="actions">
+                    <button class="btn-secondary" onclick="reloadMembers()">Recargar Miembros</button>
+                    <a class="btn-secondary" href="/download-excel" id="downloadBtn" style="display:none;">Descargar Excel</a>
+                </div>
+            </div>
+
+            <!-- Upload fotos grupales -->
+            <div class="upload-card" id="attCard" onclick="document.getElementById('attInput').click()" style="margin-bottom: 20px;">
+                <div id="attPlaceholder">
+                    <span class="upload-icon">📸</span>
+                    <h3>Fotos del Entrenamiento</h3>
+                    <p>Sube una o varias fotos grupales del entrenamiento</p>
+                </div>
+                <div id="attPreview" style="display:none;">
+                    <div id="attThumbnails" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div>
+                    <span class="change-btn" style="margin-top:10px;">Agregar mas fotos</span>
+                </div>
+                <input type="file" id="attInput" accept="image/*" multiple>
+            </div>
+
+            <!-- Settings para asistencia -->
+            <div class="settings-panel">
+                <div class="settings-toggle" onclick="toggleAttSettings()">
+                    <span>Ajustes</span>
+                    <span class="arrow" id="attSettingsArrow">&#9660;</span>
+                </div>
+                <div class="settings-body" id="attSettingsBody">
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            Fecha manual
+                            <small>Dejar vacio para usar la fecha EXIF de la foto</small>
+                        </div>
+                        <div class="setting-control">
+                            <input type="date" id="attDateInput">
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            Sensibilidad
+                            <small>Mayor = detecta caras mas lejanas (mas lento)</small>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="attUpsample" min="1" max="3" value="2" step="1" oninput="document.getElementById('attUpsampleVal').textContent=this.value">
+                            <span class="value-badge" id="attUpsampleVal">2</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            Tolerancia
+                            <small>Mayor = mas permisivo al comparar</small>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="attTolerance" min="0.3" max="0.8" value="0.75" step="0.05" oninput="document.getElementById('attToleranceVal').textContent=parseFloat(this.value).toFixed(2)">
+                            <span class="value-badge" id="attToleranceVal">0.75</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            Modo
+                            <small>Multi-escala detecta mas caras</small>
+                        </div>
+                        <div class="setting-control">
+                            <select id="attModel">
+                                <option value="hog">Normal</option>
+                                <option value="multiscale">Multi-escala</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="action-btn" id="attBtn" disabled onclick="registerAttendance()">
+                Registrar Asistencia
+            </button>
+
+            <!-- Resultado de asistencia -->
+            <div class="result-panel" id="attResultPanel">
+                <div class="result-icon" id="attResultIcon"></div>
+                <h2 id="attResultTitle"></h2>
+                <div id="attDateInfo" class="att-date-info" style="display:none;"></div>
+                <div class="att-summary-stats" id="attStats" style="display:none;">
+                    <div class="att-stat present"><div class="num" id="attPresent">0</div><div class="label">Presentes</div></div>
+                    <div class="att-stat absent"><div class="num" id="attAbsent">0</div><div class="label">Ausentes</div></div>
+                    <div class="att-stat total"><div class="num" id="attFaces">0</div><div class="label">Rostros detectados</div></div>
+                </div>
+                <div class="att-results-grid" id="attResultsGrid"></div>
+            </div>
+
+            <!-- Historial -->
+            <div class="history-section" id="historySection" style="display:none;">
+                <h3>Historial de Asistencias</h3>
+                <div class="history-table-wrapper">
+                    <table class="history-table" id="historyTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- TAB: COMPARAR ROSTROS                   -->
+        <!-- ═══════════════════════════════════════ -->
+        <div class="tab-content" id="tab-compare">
+            <div class="upload-grid">
+                <div class="upload-card" id="refCard" onclick="document.getElementById('refInput').click()">
+                    <div id="refPlaceholder">
+                        <span class="upload-icon">🤳</span>
+                        <h3>Foto de Referencia</h3>
+                        <p>Tu cara (selfie o foto clara)</p>
+                    </div>
+                    <div id="refPreview" style="display:none;">
+                        <img class="preview-img" id="refImg" alt="Referencia">
+                        <span class="change-btn">Cambiar foto</span>
+                    </div>
+                    <input type="file" id="refInput" accept="image/*">
+                </div>
+                <div class="upload-card" id="targetCard" onclick="document.getElementById('targetInput').click()">
+                    <div id="targetPlaceholder">
+                        <span class="upload-icon">🖼️</span>
+                        <h3>Foto Objetivo</h3>
+                        <p>Foto grupal o donde buscarte</p>
+                    </div>
+                    <div id="targetPreview" style="display:none;">
+                        <img class="preview-img" id="targetImg" alt="Objetivo">
+                        <span class="change-btn">Cambiar foto</span>
+                    </div>
+                    <input type="file" id="targetInput" accept="image/*">
+                </div>
+            </div>
+
+            <div class="settings-panel">
+                <div class="settings-toggle" onclick="toggleSettings()">
+                    <span>Ajustes de Deteccion</span>
+                    <span class="arrow" id="settingsArrow">&#9660;</span>
+                </div>
+                <div class="settings-body" id="settingsBody">
+                    <div class="setting-row">
+                        <div class="setting-label">Sensibilidad<small>Mayor = detecta caras mas lejanas</small></div>
+                        <div class="setting-control">
+                            <input type="range" id="upsampleRange" min="1" max="3" value="2" step="1" oninput="document.getElementById('upsampleVal').textContent=this.value">
+                            <span class="value-badge" id="upsampleVal">2</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label">Tolerancia<small>Mayor = mas permisivo</small></div>
+                        <div class="setting-control">
+                            <input type="range" id="toleranceRange" min="0.3" max="0.8" value="0.75" step="0.05" oninput="document.getElementById('toleranceVal').textContent=parseFloat(this.value).toFixed(2)">
+                            <span class="value-badge" id="toleranceVal">0.75</span>
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label">Modo<small>Multi-escala detecta mas caras</small></div>
+                        <div class="setting-control">
+                            <select id="modelSelect">
+                                <option value="hog">Normal</option>
+                                <option value="multiscale">Multi-escala</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="action-btn" id="compareBtn" disabled onclick="compareFaces()">Comparar Rostros</button>
+
+            <div class="result-panel" id="resultPanel">
+                <div class="result-icon" id="resultIcon"></div>
+                <h2 id="resultTitle"></h2>
+                <p class="result-message" id="resultMessage"></p>
+                <p class="faces-summary" id="facesSummary"></p>
+                <div class="face-list" id="faceList"></div>
+                <div class="result-canvas-wrapper" id="canvasWrapper" style="display:none;">
+                    <canvas id="resultCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ═══════════════════════════════════════
+    // Tab switching
+    // ═══════════════════════════════════════
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        event.target.classList.add('active');
+        if (tab === 'attendance') loadHistory();
+    }
+
+    // ═══════════════════════════════════════
+    // Settings toggles
+    // ═══════════════════════════════════════
+    function toggleSettings() {
+        document.getElementById('settingsBody').classList.toggle('open');
+        document.getElementById('settingsArrow').classList.toggle('open');
+    }
+    function toggleAttSettings() {
+        document.getElementById('attSettingsBody').classList.toggle('open');
+        document.getElementById('attSettingsArrow').classList.toggle('open');
+    }
+
+    // ═══════════════════════════════════════
+    // ATTENDANCE TAB
+    // ═══════════════════════════════════════
+    let attFiles = [];
+
+    document.getElementById('attInput').addEventListener('change', function(e) {
+        const newFiles = Array.from(e.target.files);
+        if (newFiles.length === 0) return;
+        attFiles = attFiles.concat(newFiles);
+        renderAttThumbnails();
+        document.getElementById('attPlaceholder').style.display = 'none';
+        document.getElementById('attPreview').style.display = 'block';
+        document.getElementById('attCard').classList.add('has-image');
+        document.getElementById('attBtn').disabled = false;
+        // Reset input so same file can be re-added
+        e.target.value = '';
+    });
+
+    function renderAttThumbnails() {
+        const container = document.getElementById('attThumbnails');
+        container.innerHTML = '';
+        attFiles.forEach((file, idx) => {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'position:relative;display:inline-block;';
+            const img = document.createElement('img');
+            img.style.cssText = 'width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.15);';
+            const reader = new FileReader();
+            reader.onload = ev => { img.src = ev.target.result; };
+            reader.readAsDataURL(file);
+            const removeBtn = document.createElement('span');
+            removeBtn.textContent = 'x';
+            removeBtn.style.cssText = 'position:absolute;top:-4px;right:-4px;background:#ff5252;color:#fff;border-radius:50%;width:18px;height:18px;font-size:12px;line-height:18px;text-align:center;cursor:pointer;';
+            removeBtn.onclick = (e) => { e.stopPropagation(); attFiles.splice(idx, 1); renderAttThumbnails(); if(attFiles.length===0){document.getElementById('attPlaceholder').style.display='block';document.getElementById('attPreview').style.display='none';document.getElementById('attCard').classList.remove('has-image');document.getElementById('attBtn').disabled=true;} };
+            wrapper.appendChild(img);
+            wrapper.appendChild(removeBtn);
+            container.appendChild(wrapper);
+        });
+        const countLabel = document.createElement('div');
+        countLabel.style.cssText = 'width:100%;text-align:center;font-size:0.8rem;color:#888;margin-top:4px;';
+        countLabel.textContent = attFiles.length + ' foto(s) seleccionada(s)';
+        container.appendChild(countLabel);
+    }
+
+    async function loadMembers() {
+        try {
+            const res = await fetch('/members');
+            const data = await res.json();
+            document.getElementById('memberCount').textContent = data.count;
+        } catch(e) {
+            document.getElementById('memberCount').textContent = '?';
+        }
+    }
+
+    async function reloadMembers() {
+        try {
+            const res = await fetch('/reload-members', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('memberCount').textContent = data.count;
+            alert(data.message);
+        } catch(e) {
+            alert('Error al recargar miembros');
+        }
+    }
+
+    async function registerAttendance() {
+        const btn = document.getElementById('attBtn');
+        btn.classList.add('loading');
+        btn.textContent = 'Analizando...';
+        btn.disabled = true;
+
+        const formData = new FormData();
+        attFiles.forEach(f => formData.append('photos', f));
+        formData.append('date', document.getElementById('attDateInput').value || '');
+        formData.append('upsample', document.getElementById('attUpsample').value);
+        formData.append('tolerance', document.getElementById('attTolerance').value);
+        formData.append('model', document.getElementById('attModel').value);
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 300000);
+            const res = await fetch('/attendance', { method: 'POST', body: formData, signal: controller.signal });
+            clearTimeout(timeoutId);
+            const data = await res.json();
+            showAttendanceResult(data, !res.ok);
+        } catch(err) {
+            const msg = err.name === 'AbortError' ? 'Timeout: el analisis tardo demasiado.' : 'Error de conexion: ' + err.message;
+            showAttendanceResult({ error: msg }, true);
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Registrar Asistencia';
+            btn.disabled = false;
+        }
+    }
+
+    function showAttendanceResult(data, isError) {
+        const panel = document.getElementById('attResultPanel');
+        const icon = document.getElementById('attResultIcon');
+        const title = document.getElementById('attResultTitle');
+        const dateInfo = document.getElementById('attDateInfo');
+        const stats = document.getElementById('attStats');
+        const grid = document.getElementById('attResultsGrid');
+
+        panel.classList.remove('found', 'not-found', 'error-result');
+        grid.innerHTML = '';
+        dateInfo.style.display = 'none';
+        stats.style.display = 'none';
+
+        if (isError || data.error) {
+            panel.classList.add('error-result');
+            icon.textContent = '⚠️';
+            title.textContent = 'Error';
+            grid.innerHTML = '<p class="result-message">' + (data.error || 'Error desconocido') + '</p>';
+        } else {
+            panel.classList.add('found');
+            icon.textContent = '📋';
+            title.textContent = 'Asistencia Registrada';
+
+            const sourceLabels = { exif: 'desde metadatos EXIF', nombre: 'desde nombre de archivo', manual: 'fecha manual', hoy: 'fecha de hoy' };
+            const photosInfo = data.photos_processed > 1 ? ` | ${data.photos_processed} fotos analizadas` : '';
+            dateInfo.innerHTML = `Fecha: <strong>${data.date}</strong> <span class="source">(${sourceLabels[data.date_source] || data.date_source}${photosInfo})</span>`;
+            dateInfo.style.display = 'block';
+
+            document.getElementById('attPresent').textContent = data.present_count;
+            document.getElementById('attAbsent').textContent = data.absent_count;
+            document.getElementById('attFaces').textContent = data.total_faces_detected;
+            stats.style.display = 'flex';
+
+            // Sort: present first, then by confidence desc
+            const sorted = [...data.results].sort((a, b) => {
+                if (a.present !== b.present) return b.present - a.present;
+                return b.confidence - a.confidence;
+            });
+
+            sorted.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'att-member-card ' + (m.present ? 'present' : 'absent');
+                card.innerHTML = `
+                    <div class="status-icon">${m.present ? '✅' : '❌'}</div>
+                    <div class="member-info">
+                        <div class="member-name">${m.name}</div>
+                        <div class="member-conf">${m.confidence}% confianza</div>
+                    </div>`;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+            loadHistory();
+        }
+
+        panel.classList.add('visible');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetch('/attendance-summary');
+            const data = await res.json();
+            if (data.dates && data.dates.length > 0) {
+                renderHistoryTable(data);
+                document.getElementById('historySection').style.display = 'block';
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+            }
+        } catch(e) {}
+    }
+
+    function renderHistoryTable(data) {
+        const table = document.getElementById('historyTable');
+        let html = '<thead><tr><th>Miembro</th>';
+        data.dates.forEach(d => {
+            html += `<th>${d}<br><span class="delete-date" onclick="deleteAttendance('${d}')" title="Eliminar esta fecha">🗑</span></th>`;
+        });
+        html += '<th>Total</th></tr></thead><tbody>';
+
+        data.members.forEach(m => {
+            html += `<tr><td>${m.name}</td>`;
+            data.dates.forEach(d => {
+                html += `<td>${m.attendance[d] ? '<span class="check-mark">✓</span>' : ''}</td>`;
+            });
+            html += `<td class="total-cell">${m.total}</td></tr>`;
+        });
+
+        html += '</tbody>';
+        table.innerHTML = html;
+    }
+
+    async function deleteAttendance(dateStr) {
+        if (!confirm(`¿Eliminar la asistencia del ${dateStr}? Esta accion no se puede deshacer.`)) return;
+        try {
+            const res = await fetch('/delete-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: dateStr })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                loadHistory();
+            } else {
+                alert(data.error || 'Error al eliminar');
+            }
+        } catch(e) {
+            alert('Error de conexion');
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // COMPARE TAB (original functionality)
+    // ═══════════════════════════════════════
+    let refFile = null, targetFile = null, targetImgObj = null;
+
+    document.getElementById('refInput').addEventListener('change', function(e) {
+        const file = e.target.files[0]; if (!file) return;
+        refFile = file;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('refImg').src = ev.target.result;
+            document.getElementById('refPlaceholder').style.display = 'none';
+            document.getElementById('refPreview').style.display = 'block';
+            document.getElementById('refCard').classList.add('has-image');
+            document.getElementById('compareBtn').disabled = !(refFile && targetFile);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('targetInput').addEventListener('change', function(e) {
+        const file = e.target.files[0]; if (!file) return;
+        targetFile = file;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('targetImg').src = ev.target.result;
+            document.getElementById('targetPlaceholder').style.display = 'none';
+            document.getElementById('targetPreview').style.display = 'block';
+            document.getElementById('targetCard').classList.add('has-image');
+            targetImgObj = new Image(); targetImgObj.src = ev.target.result;
+            document.getElementById('compareBtn').disabled = !(refFile && targetFile);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    async function compareFaces() {
+        const btn = document.getElementById('compareBtn');
+        btn.classList.add('loading'); btn.textContent = 'Analizando...'; btn.disabled = true;
+        const formData = new FormData();
+        formData.append('reference', refFile); formData.append('target', targetFile);
+        formData.append('upsample', document.getElementById('upsampleRange').value);
+        formData.append('tolerance', document.getElementById('toleranceRange').value);
+        formData.append('model', document.getElementById('modelSelect').value);
+        try {
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 120000);
+            const res = await fetch('/compare', { method: 'POST', body: formData, signal: controller.signal });
+            clearTimeout(tid);
+            const data = await res.json();
+            showCompareResult(data, !res.ok);
+        } catch(err) {
+            const msg = err.name === 'AbortError' ? 'Timeout.' : 'Error: ' + err.message;
+            showCompareResult({ error: msg }, true);
+        } finally {
+            btn.classList.remove('loading'); btn.textContent = 'Comparar Rostros'; btn.disabled = false;
+        }
+    }
+
+    function showCompareResult(data, isError) {
+        const panel = document.getElementById('resultPanel');
+        const icon = document.getElementById('resultIcon');
+        const title = document.getElementById('resultTitle');
+        const message = document.getElementById('resultMessage');
+        const summary = document.getElementById('facesSummary');
+        const faceList = document.getElementById('faceList');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        panel.classList.remove('found','not-found','error-result');
+        faceList.innerHTML = ''; canvasWrapper.style.display = 'none';
+
+        if (isError || data.error) {
+            panel.classList.add('error-result'); icon.textContent = '⚠️';
+            title.textContent = 'Error'; message.textContent = data.error || 'Error desconocido.'; summary.textContent = '';
+        } else if (data.found) {
+            panel.classList.add('found'); icon.textContent = '✅'; title.textContent = '¡Encontrado!';
+            message.textContent = data.message;
+            summary.textContent = `Se detectaron ${data.total_faces} rostro(s).`;
+            renderFaceChips(data.matches); drawCanvasResult(data.matches);
+        } else {
+            panel.classList.add('not-found'); icon.textContent = '❌'; title.textContent = 'No Encontrado';
+            message.textContent = data.message;
+            summary.textContent = data.total_faces > 0 ? `${data.total_faces} rostro(s), ninguno coincide.` : '';
+            if (data.matches && data.matches.length > 0) { renderFaceChips(data.matches); drawCanvasResult(data.matches); }
+        }
+        panel.classList.add('visible');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderFaceChips(matches) {
+        const fl = document.getElementById('faceList');
+        matches.forEach(m => {
+            const c = document.createElement('span');
+            c.className = 'face-chip ' + (m.is_match ? 'match' : 'no-match');
+            c.textContent = `Rostro ${m.face_index}: ${m.confidence}%` + (m.is_match ? ' ✓' : '');
+            fl.appendChild(c);
+        });
+    }
+
+    function drawCanvasResult(matches) {
+        if (!targetImgObj || !targetImgObj.complete) return;
+        const cw = document.getElementById('canvasWrapper');
+        const canvas = document.getElementById('resultCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = targetImgObj.naturalWidth; canvas.height = targetImgObj.naturalHeight;
+        ctx.drawImage(targetImgObj, 0, 0);
+        matches.forEach(m => {
+            const loc = m.location;
+            const x = loc.left, y = loc.top, w = loc.right - loc.left, h = loc.bottom - loc.top;
+            ctx.strokeStyle = m.is_match ? '#00e676' : '#ff5252';
+            ctx.lineWidth = Math.max(3, canvas.width * 0.004);
+            ctx.strokeRect(x, y, w, h);
+            const fs = Math.max(14, canvas.width * 0.02);
+            ctx.font = `bold ${fs}px Segoe UI, sans-serif`;
+            const label = m.is_match ? `✓ ${m.confidence}%` : `${m.confidence}%`;
+            const tw = ctx.measureText(label).width;
+            ctx.fillStyle = m.is_match ? 'rgba(0,230,118,0.85)' : 'rgba(255,82,82,0.75)';
+            ctx.fillRect(x, y - fs - 8, tw + 12, fs + 8);
+            ctx.fillStyle = '#fff'; ctx.fillText(label, x + 6, y - 6);
+        });
+        cw.style.display = 'block';
+    }
+
+    // ═══════════════════════════════════════
+    // Init
+    // ═══════════════════════════════════════
+    loadMembers();
+    loadHistory();
+    </script>
+</body>
+</html>

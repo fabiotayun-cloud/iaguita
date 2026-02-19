@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+asistencias.xlsx
+miembros/*.jpg
+miembros/*.jpeg
+miembros/*.png
+miembros/*.webp
+miembros/*.bmp
+.windsurf/

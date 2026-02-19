@@ -1,0 +1,7 @@
+flask
+dlib-bin
+face_recognition
+numpy
+Pillow
+setuptools<70
+openpyxl
