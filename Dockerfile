@@ -1,18 +1,19 @@
 FROM python:3.12-slim
 
-# Install system dependencies for dlib/face_recognition
+# Install only runtime dependencies (no build-essential/cmake)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    libopenblas-dev \
-    liblapack-dev \
-    libx11-dev \
+    libopenblas0 \
+    liblapack3 \
+    libx11-6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Install dlib-bin (pre-compiled wheel, no compilation needed)
+# Then install remaining dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir dlib-bin && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
