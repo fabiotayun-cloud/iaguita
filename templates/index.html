@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reconocimiento Facial</title>
+    <title>IAguita</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -192,13 +193,82 @@
         .total-cell { font-weight: 600; color: #00d2ff; }
         .delete-date { cursor: pointer; font-size: 0.75rem; opacity: 0.5; transition: opacity 0.2s; }
         .delete-date:hover { opacity: 1; }
+
+        /* Training photos section */
+        .training-photos-section { margin-top: 20px; margin-bottom: 20px; }
+        .training-photos-section h3 { font-size: 1rem; margin-bottom: 10px; color: #ccc; text-align: center; }
+        .training-date-group { margin-bottom: 14px; }
+        .training-date-group .date-label {
+            font-size: 0.85rem; font-weight: 600; color: #00d2ff; margin-bottom: 6px;
+            cursor: pointer; user-select: none;
+        }
+        .training-date-group .date-label:hover { text-decoration: underline; }
+        .training-thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+        .training-thumbs img {
+            width: 70px; height: 70px; object-fit: cover; border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: transform 0.2s;
+        }
+        .training-thumbs img:hover { transform: scale(1.1); border-color: rgba(0,210,255,0.4); }
+        .photo-count-badge {
+            display: inline-block; font-size: 0.72rem; color: #888;
+            background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 10px; margin-left: 6px;
+        }
+
+        /* Lightbox overlay */
+        .lightbox {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.88); z-index: 1000;
+            flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+        }
+        .lightbox.active { display: flex; }
+        .lightbox-close {
+            position: absolute; top: 16px; right: 24px; font-size: 2rem; color: #fff;
+            cursor: pointer; z-index: 1001;
+        }
+        .lightbox-simple img { max-width: 92%; max-height: 85%; border-radius: 8px; }
+        .lightbox-compare {
+            display: none; align-items: stretch; gap: 20px; max-width: 95%; max-height: 80%;
+        }
+        .lightbox-compare.active { display: flex; }
+        .lb-panel {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .lb-panel-label {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+            color: #888; font-weight: 600;
+        }
+        .lb-panel img { border-radius: 8px; object-fit: contain; }
+        .lb-panel-ref img { max-height: 55vh; max-width: 250px; }
+        .lb-panel-group img { max-height: 55vh; max-width: 70vw; }
+        .lb-vs {
+            display: flex; align-items: center; font-size: 1.5rem; font-weight: 800; color: #555;
+        }
+        .lightbox-info {
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+            border-radius: 12px; padding: 10px 24px; text-align: center;
+            display: none;
+        }
+        .lightbox-info .lb-name { font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .lightbox-info .lb-conf { font-size: 0.95rem; color: #00e676; margin-top: 2px; }
+
+        /* Photo hint on member cards */
+        .member-photo-hint {
+            font-size: 0.7rem; color: #00e676; margin-top: 2px; opacity: 0.7;
+        }
+        .att-member-card.present:hover .member-photo-hint { opacity: 1; }
+
+        /* Duplicate warning */
+        .dup-warning {
+            background: rgba(255,171,64,0.12); border: 1px solid rgba(255,171,64,0.3);
+            border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 0.85rem; color: #ffab40;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Reconocimiento Facial</h1>
-            <p>Comparar rostros y registrar asistencias por reconocimiento facial</p>
+            <h1>IAguita</h1>
+            <p>Reconocimiento facial para registro de asistencias</p>
         </header>
 
         <!-- Tabs -->
@@ -216,8 +286,16 @@
                 <div class="info">Miembros cargados: <strong id="memberCount">0</strong></div>
                 <div class="actions">
                     <button class="btn-secondary" onclick="reloadMembers()">Recargar Miembros</button>
-                    <a class="btn-secondary" href="/download-excel" id="downloadBtn" style="display:none;">Descargar Excel</a>
+                    <a class="btn-secondary" href="/download-excel" id="downloadBtn">Descargar Excel</a>
+                    <button class="btn-secondary" onclick="document.getElementById('importExcelInput').click()">Importar Excel</button>
+                    <input type="file" id="importExcelInput" accept=".xlsx" style="display:none;" onchange="importExcel(this)">
                 </div>
+            </div>
+
+            <!-- Demo section -->
+            <div id="demoSection" style="display:none;margin-bottom:20px;">
+                <h3 style="color:#e94560;margin-bottom:12px;">Demos Disponibles</h3>
+                <div id="demoCards" style="display:flex;flex-wrap:wrap;gap:14px;"></div>
             </div>
 
             <!-- Upload fotos grupales -->
@@ -302,12 +380,41 @@
                 <div class="att-results-grid" id="attResultsGrid"></div>
             </div>
 
+            <!-- Fotos de entrenamientos anteriores -->
+            <div class="training-photos-section" id="trainingPhotosSection" style="display:none;">
+                <h3>Fotos de Entrenamientos</h3>
+                <div id="trainingPhotosContainer"></div>
+            </div>
+
             <!-- Historial -->
             <div class="history-section" id="historySection" style="display:none;">
                 <h3>Historial de Asistencias</h3>
                 <div class="history-table-wrapper">
                     <table class="history-table" id="historyTable"></table>
                 </div>
+            </div>
+        </div>
+
+        <!-- Lightbox -->
+        <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+            <span class="lightbox-close">&times;</span>
+            <div class="lightbox-simple" id="lightboxSimple" onclick="event.stopPropagation()">
+                <img id="lightboxImg" src="" alt="Foto">
+            </div>
+            <div class="lightbox-compare" id="lightboxCompare" onclick="event.stopPropagation()">
+                <div class="lb-panel lb-panel-ref">
+                    <span class="lb-panel-label">Referencia</span>
+                    <img id="lightboxRefImg" src="" alt="Referencia">
+                </div>
+                <div class="lb-vs">VS</div>
+                <div class="lb-panel lb-panel-group">
+                    <span class="lb-panel-label">Detectado en foto grupal</span>
+                    <img id="lightboxGroupImg" src="" alt="Grupo">
+                </div>
+            </div>
+            <div class="lightbox-info" id="lightboxInfo" onclick="event.stopPropagation()">
+                <div class="lb-name" id="lightboxName"></div>
+                <div class="lb-conf" id="lightboxConf"></div>
             </div>
         </div>
 
@@ -477,6 +584,66 @@
         }
     }
 
+    async function loadDemos() {
+        try {
+            const res = await fetch('/demos');
+            const data = await res.json();
+            const container = document.getElementById('demoCards');
+            container.innerHTML = '';
+            if (!data.demos || data.demos.length === 0) return;
+
+            data.demos.forEach(demo => {
+                const card = document.createElement('div');
+                card.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid #0f3460;border-radius:14px;padding:14px;flex:1;min-width:280px;max-width:460px;';
+                card.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <img src="${demo.group_photo_url}" alt="${demo.label}"
+                             style="width:100px;height:68px;object-fit:cover;border-radius:8px;border:2px solid #e94560;cursor:pointer;"
+                             onclick="openLightbox('${demo.group_photo_url}')">
+                        <div style="flex:1;">
+                            <div style="font-weight:700;color:#e94560;font-size:0.95rem;">${demo.label}</div>
+                            <div style="font-size:0.78rem;color:#888;margin-top:2px;">${demo.member_count} jugadores registrados</div>
+                        </div>
+                    </div>
+                    <button class="action-btn demo-run-btn" data-demo-id="${demo.id}"
+                            onclick="runDemo('${demo.id}', this)"
+                            style="margin-top:10px;width:100%;font-size:0.85rem;">
+                        Ejecutar Demo
+                    </button>`;
+                container.appendChild(card);
+            });
+            document.getElementById('demoSection').style.display = 'block';
+        } catch(e) {}
+    }
+
+    async function runDemo(demoId, btn) {
+        btn.classList.add('loading');
+        btn.textContent = 'Analizando...';
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('demo_id', demoId);
+        formData.append('upsample', document.getElementById('attUpsample').value);
+        formData.append('tolerance', document.getElementById('attTolerance').value);
+        formData.append('model', document.getElementById('attModel').value);
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 300000);
+            const res = await fetch('/demo-attendance', { method: 'POST', body: formData, signal: controller.signal });
+            clearTimeout(timeoutId);
+            const data = await res.json();
+            showAttendanceResult(data, !res.ok);
+        } catch(err) {
+            const msg = err.name === 'AbortError' ? 'Timeout: el analisis tardo demasiado.' : 'Error de conexion: ' + err.message;
+            showAttendanceResult({ error: msg }, true);
+        } finally {
+            btn.classList.remove('loading');
+            btn.textContent = 'Ejecutar Demo';
+            btn.disabled = false;
+        }
+    }
+
     async function registerAttendance() {
         const btn = document.getElementById('attBtn');
         btn.classList.add('loading');
@@ -527,20 +694,25 @@
             grid.innerHTML = '<p class="result-message">' + (data.error || 'Error desconocido') + '</p>';
         } else {
             panel.classList.add('found');
-            icon.textContent = '📋';
-            title.textContent = 'Asistencia Registrada';
+            icon.textContent = data.is_demo ? '🎮' : '📋';
+            title.textContent = data.is_demo ? 'Resultado Demo' : 'Asistencia Registrada';
 
-            const sourceLabels = { exif: 'desde metadatos EXIF', nombre: 'desde nombre de archivo', manual: 'fecha manual', hoy: 'fecha de hoy' };
+            const sourceLabels = { exif: 'desde metadatos EXIF', nombre: 'desde nombre de archivo', manual: 'fecha manual', hoy: 'fecha de hoy', demo: 'foto de demo - no se guarda' };
             const photosInfo = data.photos_processed > 1 ? ` | ${data.photos_processed} fotos analizadas` : '';
             dateInfo.innerHTML = `Fecha: <strong>${data.date}</strong> <span class="source">(${sourceLabels[data.date_source] || data.date_source}${photosInfo})</span>`;
             dateInfo.style.display = 'block';
+
+            // Mostrar aviso de duplicados omitidos
+            if (data.duplicates_skipped && data.duplicates_skipped.length > 0) {
+                const dupNames = data.duplicates_skipped.map(d => `"${d.filename}" (ya en ${d.date})`).join(', ');
+                dateInfo.innerHTML += `<div class="dup-warning">Fotos omitidas por duplicado: ${dupNames}</div>`;
+            }
 
             document.getElementById('attPresent').textContent = data.present_count;
             document.getElementById('attAbsent').textContent = data.absent_count;
             document.getElementById('attFaces').textContent = data.total_faces_detected;
             stats.style.display = 'flex';
 
-            // Sort: present first, then by confidence desc
             const sorted = [...data.results].sort((a, b) => {
                 if (a.present !== b.present) return b.present - a.present;
                 return b.confidence - a.confidence;
@@ -549,17 +721,25 @@
             sorted.forEach(m => {
                 const card = document.createElement('div');
                 card.className = 'att-member-card ' + (m.present ? 'present' : 'absent');
+                const hasPhoto = m.present && m.annotated_url;
+                card.style.cursor = hasPhoto ? 'pointer' : 'default';
                 card.innerHTML = `
                     <div class="status-icon">${m.present ? '✅' : '❌'}</div>
                     <div class="member-info">
                         <div class="member-name">${m.name}</div>
                         <div class="member-conf">${m.confidence}% confianza</div>
+                        ${hasPhoto ? '<div class="member-photo-hint">Clic para ver foto</div>' : ''}
                     </div>`;
+                if (hasPhoto) {
+                    card.onclick = () => openLightbox(m.annotated_url, m.name, m.confidence, m.member_photo_url);
+                }
                 grid.appendChild(card);
             });
 
-            document.getElementById('downloadBtn').style.display = 'inline-block';
-            loadHistory();
+            if (!data.is_demo) {
+                loadHistory();
+                loadTrainingPhotos();
+            }
         }
 
         panel.classList.add('visible');
@@ -573,25 +753,26 @@
             if (data.dates && data.dates.length > 0) {
                 renderHistoryTable(data);
                 document.getElementById('historySection').style.display = 'block';
-                document.getElementById('downloadBtn').style.display = 'inline-block';
             }
         } catch(e) {}
     }
 
     function renderHistoryTable(data) {
         const table = document.getElementById('historyTable');
-        let html = '<thead><tr><th>Miembro</th>';
+        let html = '<thead><tr><th>Miembro</th><th>Total</th><th>Mes</th>';
         data.dates.forEach(d => {
             html += `<th>${d}<br><span class="delete-date" onclick="deleteAttendance('${d}')" title="Eliminar esta fecha">🗑</span></th>`;
         });
-        html += '<th>Total</th></tr></thead><tbody>';
+        html += '</tr></thead><tbody>';
 
         data.members.forEach(m => {
             html += `<tr><td>${m.name}</td>`;
+            html += `<td class="total-cell">${m.total}</td>`;
+            html += `<td class="total-cell" style="color:#008080;">${m.month_total || 0}</td>`;
             data.dates.forEach(d => {
                 html += `<td>${m.attendance[d] ? '<span class="check-mark">✓</span>' : ''}</td>`;
             });
-            html += `<td class="total-cell">${m.total}</td></tr>`;
+            html += '</tr>';
         });
 
         html += '</tbody>';
@@ -612,6 +793,122 @@
                 loadHistory();
             } else {
                 alert(data.error || 'Error al eliminar');
+            }
+        } catch(e) {
+            alert('Error de conexion');
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // Training photos & Lightbox
+    // ═══════════════════════════════════════
+    async function loadTrainingPhotos() {
+        try {
+            const res = await fetch('/training-photos');
+            const data = await res.json();
+            const container = document.getElementById('trainingPhotosContainer');
+            container.innerHTML = '';
+            const dates = Object.keys(data).sort().reverse();
+            if (dates.length === 0) {
+                document.getElementById('trainingPhotosSection').style.display = 'none';
+                return;
+            }
+            dates.forEach(date => {
+                const group = document.createElement('div');
+                group.className = 'training-date-group';
+                const photos = data[date];
+                group.innerHTML = `<div class="date-label">${date} <span class="photo-count-badge">${photos.length} foto(s)</span></div>`;
+                const thumbs = document.createElement('div');
+                thumbs.className = 'training-thumbs';
+                photos.forEach(filename => {
+                    const wrap = document.createElement('div');
+                    wrap.style.cssText = 'position:relative; display:inline-block;';
+                    const img = document.createElement('img');
+                    img.src = `/training-photo/${date}/${filename}`;
+                    img.title = filename;
+                    img.onclick = () => openLightbox(img.src);
+                    const delBtn = document.createElement('span');
+                    delBtn.textContent = '✕';
+                    delBtn.title = 'Eliminar foto';
+                    delBtn.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(220,30,30,0.85);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;line-height:18px;text-align:center;cursor:pointer;z-index:2;';
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteTrainingPhoto(date, filename); };
+                    wrap.appendChild(img);
+                    wrap.appendChild(delBtn);
+                    thumbs.appendChild(wrap);
+                });
+                group.appendChild(thumbs);
+                container.appendChild(group);
+            });
+            document.getElementById('trainingPhotosSection').style.display = 'block';
+        } catch(e) {}
+    }
+
+    function openLightbox(src, name, confidence, memberPhotoUrl) {
+        const simple = document.getElementById('lightboxSimple');
+        const compare = document.getElementById('lightboxCompare');
+        const info = document.getElementById('lightboxInfo');
+
+        if (name && memberPhotoUrl) {
+            // Modo comparacion: referencia vs grupo anotado
+            simple.style.display = 'none';
+            document.getElementById('lightboxRefImg').src = memberPhotoUrl;
+            document.getElementById('lightboxGroupImg').src = src;
+            compare.classList.add('active');
+            document.getElementById('lightboxName').textContent = name;
+            document.getElementById('lightboxConf').textContent = confidence + '% confianza';
+            info.style.display = 'block';
+        } else {
+            // Modo simple: solo una imagen
+            compare.classList.remove('active');
+            document.getElementById('lightboxImg').src = src;
+            simple.style.display = 'block';
+            info.style.display = 'none';
+        }
+        document.getElementById('lightbox').classList.add('active');
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+        document.getElementById('lightboxSimple').style.display = 'none';
+        document.getElementById('lightboxCompare').classList.remove('active');
+        document.getElementById('lightboxInfo').style.display = 'none';
+    }
+
+    async function deleteTrainingPhoto(date, filename) {
+        if (!confirm(`¿Eliminar "${filename}" del ${date}? Podrás volver a subirla.`)) return;
+        try {
+            const res = await fetch('/delete-training-photo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date, filename })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                loadTrainingPhotos();
+            } else {
+                alert(data.error || 'Error al eliminar');
+            }
+        } catch(e) {
+            alert('Error de conexion');
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // Import Excel
+    // ═══════════════════════════════════════
+    async function importExcel(input) {
+        const file = input.files[0];
+        if (!file) return;
+        input.value = '';
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await fetch('/upload-excel', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                loadHistory();
+            } else {
+                alert(data.error || 'Error al importar');
             }
         } catch(e) {
             alert('Error de conexion');
@@ -743,6 +1040,8 @@
     // ═══════════════════════════════════════
     loadMembers();
     loadHistory();
+    loadTrainingPhotos();
+    loadDemos();
     </script>
 </body>
 </html>

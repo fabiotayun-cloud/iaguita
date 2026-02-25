@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IAguita - Imágenes Promocionales</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 40px 20px;
+        }
+        h1 { text-align: center; margin-bottom: 10px; font-size: 1.6rem; color: #fff; }
+        .instructions {
+            text-align: center; color: #999; font-size: 0.9rem; margin-bottom: 40px;
+            max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+        .section-title {
+            text-align: center; font-size: 1.1rem; color: #aaa; margin-bottom: 16px;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+        .card-wrapper {
+            display: flex; justify-content: center; margin-bottom: 50px;
+        }
+        .save-btn {
+            display: block; margin: -30px auto 50px; padding: 10px 24px;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff); color: #fff;
+            border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;
+        }
+        .save-btn:hover { opacity: 0.9; }
+
+        /* ====== LINKEDIN POST (1200x627) ====== */
+        .linkedin {
+            width: 1200px; height: 627px;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            border-radius: 0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 60px 80px;
+        }
+        .linkedin .left { flex: 1.2; z-index: 2; }
+        .linkedin .right { flex: 1; display: flex; justify-content: center; align-items: center; z-index: 2; }
+        .linkedin .badge {
+            display: inline-block; padding: 6px 16px; background: rgba(123,47,247,0.25);
+            border: 1px solid rgba(123,47,247,0.4); border-radius: 20px;
+            font-size: 14px; color: #c4a0ff; margin-bottom: 20px; letter-spacing: 0.5px;
+        }
+        .linkedin h2 {
+            font-size: 48px; font-weight: 800; line-height: 1.15; margin-bottom: 18px;
+            background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .linkedin .subtitle { font-size: 18px; color: #bbb; line-height: 1.5; margin-bottom: 28px; }
+        .linkedin .features { display: flex; gap: 20px; flex-wrap: wrap; }
+        .linkedin .feature {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.07); padding: 8px 16px;
+            border-radius: 8px; font-size: 14px; color: #ddd;
+        }
+        .linkedin .feature .icon { font-size: 20px; }
+        .linkedin .mockup {
+            width: 380px; height: 440px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px; padding: 20px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .linkedin .mockup-header {
+            text-align: center; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .linkedin .mockup-header .app-icon { font-size: 36px; }
+        .linkedin .mockup-header h3 {
+            font-size: 20px; margin-top: 4px;
+            background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .linkedin .mockup-tabs {
+            display: flex; gap: 6px; justify-content: center;
+        }
+        .linkedin .mockup-tab {
+            padding: 6px 14px; border-radius: 6px 6px 0 0; font-size: 11px; font-weight: 600;
+            background: rgba(255,255,255,0.05); color: #888;
+        }
+        .linkedin .mockup-tab.active { background: rgba(123,47,247,0.25); color: #fff; }
+        .linkedin .mockup-body { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .linkedin .mock-upload {
+            flex: 1; border: 2px dashed rgba(255,255,255,0.15); border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #888; font-size: 12px;
+        }
+        .linkedin .mock-upload .up-icon { font-size: 32px; margin-bottom: 6px; }
+        .linkedin .mock-btn {
+            display: block; width: 100%; padding: 10px; text-align: center;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff);
+            border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff;
+        }
+        .linkedin .mock-results {
+            display: flex; gap: 6px; justify-content: center;
+        }
+        .linkedin .mock-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 14px;
+        }
+        .linkedin .mock-avatar.present { background: rgba(76,175,80,0.3); border: 2px solid #4caf50; }
+        .linkedin .mock-avatar.absent { background: rgba(244,67,54,0.2); border: 2px solid #f44336; }
+        /* Decorative circles */
+        .linkedin .deco1 {
+            position: absolute; width: 400px; height: 400px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(123,47,247,0.15), transparent 70%);
+            top: -100px; right: -50px;
+        }
+        .linkedin .deco2 {
+            position: absolute; width: 300px; height: 300px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,210,255,0.1), transparent 70%);
+            bottom: -80px; left: -50px;
+        }
+        .linkedin .url-bar {
+            position: absolute; bottom: 30px; right: 80px;
+            font-size: 14px; color: #7b2ff7; background: rgba(123,47,247,0.1);
+            padding: 6px 16px; border-radius: 6px; letter-spacing: 0.3px;
+        }
+
+        /* ====== WHATSAPP STATUS (1080x1920) ====== */
+        .wa-status {
+            width: 540px; height: 960px;
+            background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px 36px; text-align: center;
+        }
+        .wa-status .deco1 {
+            position: absolute; width: 500px; height: 500px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(123,47,247,0.2), transparent 60%);
+            top: -150px; right: -150px;
+        }
+        .wa-status .deco2 {
+            position: absolute; width: 400px; height: 400px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,210,255,0.12), transparent 60%);
+            bottom: -100px; left: -100px;
+        }
+        .wa-status .content { z-index: 2; }
+        .wa-status .emoji-big { font-size: 80px; margin-bottom: 24px; }
+        .wa-status h2 {
+            font-size: 42px; font-weight: 800; margin-bottom: 12px;
+            background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .wa-status .tagline {
+            font-size: 20px; color: #ccc; margin-bottom: 40px; line-height: 1.4;
+        }
+        .wa-status .steps {
+            display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px; text-align: left;
+        }
+        .wa-status .step {
+            display: flex; align-items: center; gap: 14px;
+            background: rgba(255,255,255,0.06); padding: 14px 18px;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);
+        }
+        .wa-status .step-num {
+            width: 36px; height: 36px; min-width: 36px;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 16px; color: #fff;
+        }
+        .wa-status .step-text { font-size: 16px; color: #ddd; line-height: 1.3; }
+        .wa-status .cta {
+            display: inline-block; padding: 14px 36px;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff);
+            border-radius: 12px; font-size: 18px; font-weight: 700; color: #fff;
+            margin-bottom: 16px; letter-spacing: 0.5px;
+        }
+        .wa-status .url { font-size: 14px; color: #9e9e9e; word-break: break-all; }
+
+        /* ====== WHATSAPP MESSAGE (1080x1080) ====== */
+        .wa-msg {
+            width: 540px; height: 540px;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            position: relative; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px; text-align: center;
+        }
+        .wa-msg .deco1 {
+            position: absolute; width: 350px; height: 350px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(123,47,247,0.18), transparent 60%);
+            top: -80px; left: -80px;
+        }
+        .wa-msg .deco2 {
+            position: absolute; width: 250px; height: 250px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,210,255,0.1), transparent 60%);
+            bottom: -60px; right: -60px;
+        }
+        .wa-msg .content { z-index: 2; }
+        .wa-msg .emoji-top { font-size: 56px; margin-bottom: 16px; }
+        .wa-msg h2 {
+            font-size: 36px; font-weight: 800; margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d2ff, #7b2ff7);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .wa-msg .desc {
+            font-size: 17px; color: #bbb; line-height: 1.5; margin-bottom: 28px;
+            max-width: 400px;
+        }
+        .wa-msg .highlight-box {
+            display: inline-flex; align-items: center; gap: 20px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px; padding: 16px 24px; margin-bottom: 28px;
+        }
+        .wa-msg .highlight-item { text-align: center; }
+        .wa-msg .highlight-item .hi-icon { font-size: 28px; margin-bottom: 4px; }
+        .wa-msg .highlight-item .hi-text { font-size: 12px; color: #aaa; }
+        .wa-msg .divider { width: 1px; height: 40px; background: rgba(255,255,255,0.1); }
+        .wa-msg .cta-btn {
+            display: inline-block; padding: 12px 32px;
+            background: linear-gradient(135deg, #7b2ff7, #00d2ff);
+            border-radius: 10px; font-size: 16px; font-weight: 700; color: #fff;
+            margin-bottom: 12px;
+        }
+        .wa-msg .url { font-size: 13px; color: #888; }
+    </style>
+</head>
+<body>
+
+<h1>Imágenes Promocionales — IAguita ⚽</h1>
+<p class="instructions">
+    Haz clic derecho en cada imagen → "Guardar imagen como..." o toma un screenshot.<br>
+    Cada imagen está optimizada para su plataforma.
+</p>
+
+<!-- ========== LINKEDIN (1200x627) ========== -->
+<p class="section-title">📘 LinkedIn Post (1200×627)</p>
+<div class="card-wrapper">
+    <div class="linkedin" id="linkedin-img">
+        <div class="deco1"></div>
+        <div class="deco2"></div>
+        <div class="left">
+            <div class="badge">⚽ Proyecto de IA aplicada</div>
+            <h2>IAguita</h2>
+            <p class="subtitle">
+                Sistema de asistencia inteligente con<br>
+                <strong style="color:#fff;">reconocimiento facial</strong> para equipos de fútbol.
+            </p>
+            <div class="features">
+                <div class="feature"><span class="icon">📸</span> Foto grupal</div>
+                <div class="feature"><span class="icon">🤖</span> IA detecta rostros</div>
+                <div class="feature"><span class="icon">📊</span> Excel automático</div>
+            </div>
+        </div>
+        <div class="right">
+            <div class="mockup">
+                <div class="mockup-header">
+                    <span class="app-icon">⚽</span>
+                    <h3>IAguita</h3>
+                </div>
+                <div class="mockup-tabs">
+                    <div class="mockup-tab active">Asistencias</div>
+                    <div class="mockup-tab">Comparar</div>
+                </div>
+                <div class="mockup-body">
+                    <div class="mock-upload">
+                        <span class="up-icon">📷</span>
+                        Sube foto grupal
+                    </div>
+                    <div class="mock-btn">Registrar Asistencia</div>
+                    <div class="mock-results">
+                        <div class="mock-avatar present">✓</div>
+                        <div class="mock-avatar present">✓</div>
+                        <div class="mock-avatar absent">✗</div>
+                        <div class="mock-avatar present">✓</div>
+                        <div class="mock-avatar absent">✗</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="url-bar">🔗 anahi-gemological-haylee.ngrok-free.dev</div>
+    </div>
+</div>
+
+<!-- ========== WHATSAPP STATUS (1080x1920) ========== -->
+<p class="section-title">📱 WhatsApp Status (9:16 vertical)</p>
+<div class="card-wrapper">
+    <div class="wa-status" id="wa-status-img">
+        <div class="deco1"></div>
+        <div class="deco2"></div>
+        <div class="content">
+            <div class="emoji-big">⚽</div>
+            <h2>IAguita</h2>
+            <p class="tagline">Asistencia inteligente con<br>reconocimiento facial</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-text">Registra a tu equipo con una foto de cada uno</div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-text">Toma una foto grupal en el entrenamiento</div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-text">La IA detecta quién asistió automáticamente</div>
+                </div>
+            </div>
+
+            <div class="cta">Pruébala gratis</div>
+            <p class="url">anahi-gemological-haylee.ngrok-free.dev</p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== WHATSAPP MESSAGE (1080x1080) ========== -->
+<p class="section-title">💬 WhatsApp Mensaje (cuadrada 1:1)</p>
+<div class="card-wrapper">
+    <div class="wa-msg" id="wa-msg-img">
+        <div class="deco1"></div>
+        <div class="deco2"></div>
+        <div class="content">
+            <div class="emoji-top">⚽📸</div>
+            <h2>IAguita</h2>
+            <p class="desc">
+                Sube una foto grupal y la IA identifica quién asistió al entrenamiento. Sin pasar lista.
+            </p>
+            <div class="highlight-box">
+                <div class="highlight-item">
+                    <div class="hi-icon">🤖</div>
+                    <div class="hi-text">Reconocimiento<br>Facial</div>
+                </div>
+                <div class="divider"></div>
+                <div class="highlight-item">
+                    <div class="hi-icon">📊</div>
+                    <div class="hi-text">Excel<br>Automático</div>
+                </div>
+                <div class="divider"></div>
+                <div class="highlight-item">
+                    <div class="hi-icon">⚡</div>
+                    <div class="hi-text">Rápido y<br>Gratuito</div>
+                </div>
+            </div>
+            <div class="cta-btn">Pruébala ahora</div>
+            <p class="url">anahi-gemological-haylee.ngrok-free.dev</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

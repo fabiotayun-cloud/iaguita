@@ -5,3 +5,4 @@ numpy
 Pillow
 setuptools<70
 openpyxl
+gunicorn

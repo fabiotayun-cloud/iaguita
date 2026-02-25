@@ -2,9 +2,9 @@ venv/
 __pycache__/
 *.pyc
 asistencias.xlsx
-miembros/*.jpg
-miembros/*.jpeg
-miembros/*.png
-miembros/*.webp
-miembros/*.bmp
+entrenamientos/
+demo_fotos_grupales/
+ngrok/
+download_demo_photos.py
+setup_demos.py
 .windsurf/

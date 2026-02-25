@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: iaguita
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
