@@ -1,20 +1,37 @@
+# ── Stage 1: build dlib & dependencies ──
+FROM python:3.12-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    libopenblas-dev \
+    liblapack-dev \
+    libx11-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY requirements.txt .
+
+# Build dlib with reduced memory usage (single job)
+ENV CMAKE_BUILD_PARALLEL_LEVEL=1
+ENV MAKEFLAGS="-j1"
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ── Stage 2: slim runtime image ──
 FROM python:3.12-slim
 
-# Install only runtime dependencies (no build-essential/cmake)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libopenblas0 \
     liblapack3 \
     libx11-6 \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy installed Python packages from builder
+COPY --from=builder /install /usr/local
+
 WORKDIR /app
-
-# Install dlib-bin (pre-compiled wheel, no compilation needed)
-# Then install remaining dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir dlib-bin && \
-    pip install --no-cache-dir -r requirements.txt
-
 COPY . .
 
 EXPOSE 5000
